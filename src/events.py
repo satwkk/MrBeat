@@ -19,10 +19,9 @@ class Events(commands.Cog):
     async def on_command_completion(self, ctx: commands.Context) -> None:
         log(DebugLogMessage(ctx.message))
     
-    # TODO: Remove this comments before running in production.
-    # @commands.Cog.listener()
-    # async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
-    #     log(ErrorLogMessage(ctx.message))
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
+        log(ErrorLogMessage(ctx.message))
         
     async def load_channels(self, guilds: discord.Guild):
         async for guild in guilds:
