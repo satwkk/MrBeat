@@ -17,6 +17,11 @@ class Song():
     url = None
     title = None
     thumbnail = None
+    
+    def __init__(self, url, title, thumbnail):
+        self.url = url
+        self.title = title
+        self.thumbnail = thumbnail
 
 ''' Base class for extracting songs. '''
 class SongExtractor(ABC):
@@ -35,18 +40,15 @@ class YoutubeSongExtractor(SongExtractor):
         self.streaming_url = 'www.youtube.com'
         self.ytdl = youtube_dl.YoutubeDL(self.YDL_OPTIONS)
     
-    def extract_song(self, url: str):
+    # TODO: Use Youtube's API instead of regex.
+    def extract_song(self, url: str) -> Song:
+        if not self.sanitize_keyword(url): url = url[1:]
         conn = http.client.HTTPSConnection(self.streaming_url)
-    
-        if not self.sanitize_keyword(url):
-            url = url[1:]
-            
         conn.request('GET', f'/results?search_query={url.replace(" ", "+") if " " in url else url}')
         body = conn.getresponse().read()
         urls = re.findall(r'watch\?v=(\S{11})', body.decode())
         meta_data = self.ytdl.extract_info(urls[0], download=False)
-        conn.close()
-        return [meta_data.get('url'), meta_data.get('title'), meta_data.get('thumbnail')]
+        return Song(meta_data.get('url'), meta_data.get('title'), meta_data.get('thumbnail'))
 
 ''' Child class of SongExtractor which extracts youtube audio from spotify playlist url. '''
 class SpotifySongExtractor(SongExtractor):
@@ -67,8 +69,8 @@ class SpotifySongExtractor(SongExtractor):
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for music in musics:
                 future = executor.submit(extractor.extract_song, music['track']['name'])
-                url, _, _ = future.result()
-                urls.append(url)
+                song = future.result()
+                urls.append(song.url)
                 
         return urls   
 

@@ -8,13 +8,12 @@ class PlayListManager():
         self.conn = sqlite3.connect("test.db")
         self.cursor = self.conn.cursor()
     
-    # TODO: Take the token as reference and change it's state without returning anything
     def sanitize_input(self, token: str):
         if token.__contains__(' '):
             return "".join([t for t in token.split(' ')])
         return token
         
-    # TODO: We assume the table name does not contain space or vulnerable characters.
+    # TODO: We assume the table name does not contain vulnerable characters.
     def create_playlist(self, name: str):
         name = self.sanitize_input(name)
         self.cursor.execute(f'''create table if not exists {name} (song text)''')
@@ -28,11 +27,6 @@ class PlayListManager():
         except Exception as e:
             cprint.err(f"Could not insert song {song} into playlist")
             pass
-        
-    # DEBUG
-    def get_playlist(self, table_name: str) -> List[str]:
-        self.cursor.execute(f"select * from {self.sanitize_input(table_name)}")
-        return self.cursor.fetchall()
     
     def list_tables(self):
         self.cursor.execute(f"select name from sqlite_master where type='table';")

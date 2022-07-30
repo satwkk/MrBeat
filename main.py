@@ -1,6 +1,12 @@
+import os
+
+from dotenv import load_dotenv
+
 from src.bot import MrBeat
 
-TOKEN = ""
+load_dotenv(".env")
+
+TOKEN = os.getenv("TOKEN")
 
 COGS = [
         "src.greetings",
