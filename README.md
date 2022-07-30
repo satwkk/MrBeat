@@ -1,6 +1,6 @@
 # Mr Beat
 
-A simple discord music bot with few other useful commands i created as a project for my discord channel as groovy and rythm expired.
+A simple discord music bot with few other useful commands i created as a project for my discord channel.
 
 ## Commands available for now
 
@@ -18,5 +18,7 @@ totalmessages
 leave
 hello
 owner
+add_playlist (addp, ap)
+list_playlist (listp, lp)
 ```
 
