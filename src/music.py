@@ -1,7 +1,9 @@
+import asyncio
 import discord
 
 from typing import List
 from discord import Embed
+from random import shuffle
 from discord.ext import commands
 
 from src.playlist import PlayListManager
@@ -132,15 +134,14 @@ class Music(commands.Cog):
         await ctx.channel.send("Caching all songs. Please wait.")
         
         async with ctx.channel.typing():
-            playlistName = self.playlistManager.create_playlist(name=name)
             extractor = self.factory.get_extractor(url)
             if isinstance(extractor, SpotifySongExtractor):
                 results = extractor.extract_song(url)
-                
-            for song in results:
-                self.playlistManager.insert_playlist(name=playlistName, song=song)
-                
-        await ctx.channel.send(f"All songs added to playlist {playlistName} created by user {ctx.author.name}")
+                playlistName = self.playlistManager.create_playlist(name=name)
+                for song in results:
+                    self.playlistManager.insert_playlist(name=playlistName, song=song)
+                    
+                await ctx.channel.send(f"All songs added to playlist {playlistName} created by user {ctx.author.name}")
     
     @commands.command(aliases=['lp', 'listp'], pass_context=True)
     async def list_playlist(self, ctx: commands.Context):
@@ -152,7 +153,29 @@ class Music(commands.Cog):
               
     # TODO: Refactor Queue and implement this.
     @commands.command(aliases=['pp', 'playp'], pass_context=True)
-    async def play_playlist(self, ctx: commands.Context): ...
-    
+    async def play_playlist(self, ctx: commands.Context, playlist: str):
+        count = 0
+        
+        # Get all contents of the playlist
+        contents = self.playlistManager.get_contents(table=playlist)
+        
+        # If the queue is not empty clear the queue
+        if not self.queueManager.bIsEmpty(ctx):
+            self.queueManager.clearQueue(ctx)
+            
+        # add all songs from playlist into the queue
+        for song in contents:
+            count += 1
+            self.queueManager.addSong(ctx, song[0])
+            
+        # Send a feedback to tell user all songs have been added to queue
+        await ctx.channel.send(f"{count} songs added to queue.")
+        
+        # Connect to void channel if message author not in any voice client
+        if ctx.voice_client is None: await ctx.author.voice.channel.connect()
+        
+        # play the first song
+        await self.play_song(self.queueManager.popSong(ctx), ctx)
+        
 def setup(bot):
     bot.add_cog(Music(bot))

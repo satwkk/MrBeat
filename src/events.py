@@ -1,8 +1,8 @@
 from cprint import cprint
 from discord.ext import commands
 from typing import AsyncIterator, List
-from src.logger import ErrorLogMessage, DebugLogMessage, log
 
+from src.logger import ErrorLogMessage, DebugLogMessage, log
 from src.queue import SONGQUEUE, QueueManager
 
 class Events(commands.Cog):
@@ -26,9 +26,9 @@ class Events(commands.Cog):
     async def on_command_completion(self, ctx: commands.Context) -> None:
         log(DebugLogMessage(ctx.message))
     
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
-        log(ErrorLogMessage(ctx.message))
+    # @commands.Cog.listener()
+    # async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
+    #     log(ErrorLogMessage(ctx.message))
         
     async def load_channels(self, guilds: AsyncIterator):
         async for guild in guilds:

@@ -56,6 +56,8 @@ class SpotifySongExtractor(SongExtractor):
         pass
         
     def extract_song(self, url: str):
+        if "spotify.com" not in url: return
+        
         extractor = YoutubeSongExtractor()
         urls = []
         
@@ -63,14 +65,18 @@ class SpotifySongExtractor(SongExtractor):
         sp = spotipy.Spotify(auth_manager=auth_manager)
         
         res = sp.playlist_tracks(url.split('/')[-2] if url.endswith('/') else url.split('/')[-1])
-        
-        musics = res["items"]
-        
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            for music in musics:
-                future = executor.submit(extractor.extract_song, music['track']['name'])
-                song = future.result()
-                urls.append(song.url)
+        songs = res["items"]
+        for song in songs:
+            urls.append(song["track"]["name"])
+        return urls
+        # return res["items"]
+    
+        # musics = res["items"]
+        # with concurrent.futures.ThreadPoolExecutor() as executor:
+        #     for music in musics:
+        #         future = executor.submit(extractor.extract_song, music['track']['name'])
+        #         song = future.result()
+        #         urls.append(song.url)
                 
-        return urls   
+        # return urls   
 
