@@ -22,7 +22,6 @@ class Music(commands.Cog):
         self.FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
 
     ######################################################## HELPER FUNCTIONS ################################################################
-    
     '''
     Plays the next song in queue.
     @param: None
@@ -39,7 +38,9 @@ class Music(commands.Cog):
     @param: url - The keyword or url to the song
     '''
     async def play_song(self, url: str, ctx: commands.Context) -> None:
-        ctx.voice_client.stop()
+        if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
+            ctx.voice_client.stop()
+            return
 
         extractor = self.factory.get_extractor(url)
         if isinstance(extractor, YoutubeSongExtractor):
@@ -52,8 +53,13 @@ class Music(commands.Cog):
             music_embed.add_field(name=f"{song.title}", value='\u200b')
             music_embed.set_image(url=song.thumbnail)
             await ctx.channel.send(embed=music_embed)
-            ctx.voice_client.play(audio_source, after=lambda e: self.bot.loop.create_task(self.play_next_song(ctx)))
-        
+            
+            # TODO: Skips song if you play a playlist while playing one playlist
+            try:
+                ctx.voice_client.play(audio_source, after=lambda e: self.bot.loop.create_task(self.play_next_song(ctx)))
+            except discord.ClientException as clientExc:
+                pass
+            
     '''
     Pauses the currently playing song.
     @param: None
@@ -156,8 +162,10 @@ class Music(commands.Cog):
         if ctx.message.author.voice is None: 
             return await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
         
-        if not self.queueManager.bIsEmpty(ctx): ctx.voice_client.stop()
-        else: await ctx.channel.send('No songs in queue to skip.')
+        if self.queueManager.bIsEmpty(ctx): 
+            return await ctx.channel.send('No songs in queue to skip.')
+        
+        ctx.voice_client.stop()
     
     '''
     Plays a song as requested by user. This takes in a keyword to perform a search 
@@ -169,12 +177,13 @@ class Music(commands.Cog):
         if ctx.message.author.voice is None:
             return await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
 
-        if ctx.voice_client is None: await ctx.author.voice.channel.connect()
+        if ctx.voice_client is None: 
+            await ctx.author.voice.channel.connect()
         
         if not self.queueManager.bIsEmpty(ctx): 
             return await ctx.channel.send(f"There are music in queues retard.")
-        else: 
-            await self.play_song(url, ctx)
+        
+        await self.play_song(url, ctx)
 
     '''
     Adds a given spotify playlist into the database to cache the songs based on key, value pair.
@@ -186,8 +195,10 @@ class Music(commands.Cog):
     '''
     @commands.command(aliases=['ap', 'add'], pass_context=True)
     async def add_playlist(self, ctx: commands.Context, name: str, url: str):
+        if self.playlistManager.bAlreadyExists(name): 
+            return await ctx.channel.send(f"{name} already exists, try a different name.")
+
         await ctx.channel.send("Caching all songs. Please wait.")
-        
         async with ctx.channel.typing():
             extractor = self.factory.get_extractor(url)
             if isinstance(extractor, SpotifySongExtractor):
@@ -221,28 +232,21 @@ class Music(commands.Cog):
     '''        
     @commands.command(aliases=['pp', 'playp'], pass_context=True)
     async def play_playlist(self, ctx: commands.Context, playlist: str):
-        count = 0
+        if ctx.voice_client is None: await ctx.author.voice.channel.connect()
         
-        # Get all contents of the playlist
+        count = 0
         contents = self.playlistManager.get_contents(table=playlist)
         
-        # If the queue is not empty clear the queue
         if not self.queueManager.bIsEmpty(ctx):
             self.queueManager.clearQueue(ctx)
             
-        # add all songs from playlist into the queue
         for song in contents:
             count += 1
             self.queueManager.addSong(ctx, song[0])
             
-        # Send a feedback to tell user all songs have been added to queue
         await ctx.channel.send(f"{count} songs added to queue.")
-        
-        # Connect to void channel if message author not in any voice client
-        if ctx.voice_client is None: await ctx.author.voice.channel.connect()
-        
-        # play the first song
         await self.play_song(self.queueManager.popSong(ctx), ctx)
+        
         
 def setup(bot):
     bot.add_cog(Music(bot))

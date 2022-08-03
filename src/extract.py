@@ -84,6 +84,7 @@ class SpotifySongExtractor(SongExtractor):
         for item in items:
             track = item.get('track')
             if track is not None:
-                urls[track.get('name')] = track.get('artists')[0].get('name')
+                song, artist  = track.get('name'), track.get('artists')[0].get('name').encode('ascii', 'ignore').decode('latin-1')
+                urls[song] = artist
                 
         return urls

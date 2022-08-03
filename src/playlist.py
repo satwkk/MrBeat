@@ -65,7 +65,18 @@ class PlayListManager():
             return self.cursor.fetchall()
         except sqlite3.OperationalError as operationerror:
             cprint.err(f"Could not found table {table}.")
-        
+
+    '''
+    Checks if the playlist to be created already exists in the database.
+    @param: playlist - Name of the playlist to be created
+    '''
+    def bAlreadyExists(self, playlist: str) -> bool:
+        tables = self.list_tables()
+        for table in tables:
+            if playlist == table[0]:
+                return True
+        return False
+
     def cleanup(self):
         self.cursor.close()
         self.conn.close()
