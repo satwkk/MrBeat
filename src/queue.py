@@ -1,7 +1,6 @@
-from random import shuffle
-
 import discord
 
+from random import shuffle
 from discord.ext import commands
 from typing import List
 
@@ -39,5 +38,4 @@ class QueueManager:
         SONGQUEUE[ctx.guild.name].clear()
         
     def shuffleQueue(self, ctx: commands.Context) -> None:
-        if len(SONGQUEUE[ctx.guild.name]) >= 1: return
         shuffle(SONGQUEUE[ctx.guild.name])
