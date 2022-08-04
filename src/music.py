@@ -40,25 +40,23 @@ class Music(commands.Cog):
     async def play_song(self, url: str, ctx: commands.Context) -> None:
         if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
             ctx.voice_client.stop()
-            return
 
         extractor = self.factory.get_extractor(url)
         if isinstance(extractor, YoutubeSongExtractor):
             song = extractor.extract_song(url)
-        
+            
         audio_source = await discord.FFmpegOpusAudio.from_probe(song.url, **self.FFMPEG_OPTIONS)
-        
         if audio_source:
             music_embed = Embed(title="Playing 🎵", colour=0x3498db)
             music_embed.add_field(name=f"{song.title}", value='\u200b')
             music_embed.set_image(url=song.thumbnail)
             await ctx.channel.send(embed=music_embed)
             
-            # TODO: Skips song if you play a playlist while playing one playlist
-            try:
-                ctx.voice_client.play(audio_source, after=lambda e: self.bot.loop.create_task(self.play_next_song(ctx)))
-            except discord.ClientException as clientExc:
-                pass
+        try:
+            ctx.voice_client.play(audio_source, after=lambda e: self.bot.loop.create_task(self.play_next_song(ctx)))
+        except discord.ClientException as clientExc:
+            pass
+        
             
     '''
     Pauses the currently playing song.
@@ -245,8 +243,12 @@ class Music(commands.Cog):
             self.queueManager.addSong(ctx, song[0])
             
         await ctx.channel.send(f"{count} songs added to queue.")
-        await self.play_song(self.queueManager.popSong(ctx), ctx)
         
+        if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
+            ctx.voice_client.stop()
+            return
+        
+        await self.play_song(self.queueManager.popSong(ctx), ctx)
         
 def setup(bot):
     bot.add_cog(Music(bot))

@@ -43,7 +43,7 @@ class PlayListManager():
             song = self.sanitize_input(song)
             self.cursor.execute (f"insert into {name} values ('{song}')")
             self.conn.commit()
-        except Exception as e:
+        except sqlite3.OperationalError as operationerror:
             cprint.err(f"Could not insert song {song} into playlist")
             pass
     
