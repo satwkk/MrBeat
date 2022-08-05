@@ -1,4 +1,3 @@
-import asyncio
 import discord
 
 from typing import List
@@ -52,11 +51,7 @@ class Music(commands.Cog):
             music_embed.set_image(url=song.thumbnail)
             await ctx.channel.send(embed=music_embed)
             
-        try:
-            ctx.voice_client.play(audio_source, after=lambda e: self.bot.loop.create_task(self.play_next_song(ctx)))
-        except discord.ClientException as clientExc:
-            pass
-        
+        ctx.voice_client.play(audio_source, after=lambda e: self.bot.loop.create_task(self.play_next_song(ctx)))
             
     '''
     Pauses the currently playing song.
