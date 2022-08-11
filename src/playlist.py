@@ -29,9 +29,12 @@ class PlayListManager():
     '''
     def create_playlist(self, name: str):
         name = self.sanitize_input(name)
-        self.cursor.execute(f'''create table if not exists {name} (song text)''')
-        self.conn.commit()
-        return name
+        try:
+            self.cursor.execute(f'''create table if not exists {name} (song text)''')
+            self.conn.commit()
+            return name
+        except sqlite3.OperationalError as operationerror:
+            cprint.err(f"Blacklisted chars in playlist name. Could not create table {name}")
 
     '''
     Inserts a song into the playlist.

@@ -20,7 +20,6 @@ class Music(commands.Cog):
         self.current_song = None
         self.FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
 
-    ######################################################## HELPER FUNCTIONS ################################################################
     '''
     Plays the next song in queue.
     @param: None
