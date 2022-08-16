@@ -1,8 +1,10 @@
 import time
 import discord
 
-from src.handle import FileWriter
+from typing import Union
 from cprint import cprint
+
+from src.handle import FileWriter
 
 # ================================================================================
 # Base message class which inherits from discord's Message class
@@ -10,30 +12,30 @@ from cprint import cprint
 
 class BaseLogMessage():
     def __init__(self, message: discord.Message) -> None:
-        self.pattern = f"[{time.ctime()}] " + "[{}] : [{}] {} sent => {}\n" # Log level, guild, author, message
         self.message = message
+        self.pattern = f"[{time.ctime()}] " + "[{}] : [{}] {} sent => {}\n" # Log level, guild, author, message
     
     # virtual function to be overriden by child classes
-    def get_message(self):
+    def getMessage(self):
         raise NotImplementedError("Must be overriden by child class")
     
     # prints the message to stdout
-    def print_message(self):
+    def printMessage(self):
         if isinstance(self, DebugLogMessage):
-            cprint.info(self.get_message())
+            cprint.info(self.getMessage())
         elif isinstance(self, ErrorLogMessage):
-            cprint.err(self.get_message())
+            cprint.err(self.getMessage())
         
     # returns name of the discord channel
-    def get_guild_name(self):
+    def getGuildName(self):
         return self.message.guild.name
 
     # returns the name of the author who invoked the command
-    def get_message_author(self):
+    def getMessageAuthor(self):
         return self.message.author.display_name
 
     # returns the content of the message
-    def get_message_content(self):
+    def getMessageContent(self):
         return self.message.content
     
 # ================================================================================
@@ -44,41 +46,59 @@ class DebugLogMessage(BaseLogMessage):
     def __init__(self, message: discord.Message) -> None:
         super().__init__(message)
 
-    # Formats the logging pattern.
-    # RETURN: str => Returns the formated string for logging.
-    def get_message(self) -> str:
+    '''
+    Formats the logging pattern.
+    @param: None
+    '''
+    def getMessage(self) -> str:
         return self.pattern.format(
             "DEBUG",
-            self.get_guild_name(),
-            self.get_message_author(),
-            self.get_message_content()
+            self.getGuildName(),
+            self.getMessageAuthor(),
+            self.getMessageContent()
         )
 
-# ================================================================================
-# Error message class which inherits from Base message class.
-# ================================================================================
-
+'''
+Error message class which inherits from Base message class.
+'''
 class ErrorLogMessage(BaseLogMessage):
     def __init__(self, message: discord.Message) -> None:
         super().__init__(message)
 
-    # Formats the logging pattern.
-    # RETURN: str => Returns the formated string for logging.
-    def get_message(self) -> str:
+    '''
+    Formats the logging pattern.
+    @param: None
+    '''
+    def getMessage(self) -> str:
         return self.pattern.format(
             "ERROR",
-            self.get_guild_name(),
-            self.get_message_author(),
-            self.get_message_content()
+            self.getGuildName(),
+            self.getMessageAuthor(),
+            self.getMessageContent()
         )
 
-def log_to_stdout(log_message: BaseLogMessage):
-    log_message.print_message()
+'''
+Logs message to stdout.
+'''
+def log_to_stdout(log_message: Union[BaseLogMessage, str]):
+    if isinstance(log_message, str):
+        print(log_message)
+    else:
+        log_message.printMessage()
 
-def log_to_file(log_message: BaseLogMessage):
+'''
+Logs message to a file specified by filename parameter.
+'''
+def log_to_file(log_message: Union[BaseLogMessage, str]):
     writer = FileWriter(path=".", filename="discord.log", encoding="utf-8")
-    writer.write(log_message.get_message())
+    if isinstance(log_message, str):
+        writer.write(log_message + '\n')
+    else:
+        writer.write(log_message.getMessage())
 
+'''
+Wrapper around both function.
+'''
 def log(log_message: BaseLogMessage):
     log_to_stdout(log_message)
     log_to_file(log_message)

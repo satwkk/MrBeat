@@ -1,5 +1,7 @@
 logs/
+__pycache__
 .cache
 *.db
 test.py
 .env
+todo.txt

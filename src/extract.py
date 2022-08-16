@@ -1,17 +1,13 @@
 import spotipy
-import youtube_dl
 
 from typing import List
-from cprint import cprint
-from dataclasses import dataclass
 from pytube import Search
+from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from googleapiclient.discovery import build
 from spotipy.oauth2 import SpotifyClientCredentials
-from youtube_dl.utils import ExtractorError, DownloadError
 
 from src.config import BLACKLIST_CHARS
-from src.config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, YOUTUBE_API_KEY
+from src.config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
 
 ''' Song Data class to store information about song '''
 @dataclass
@@ -31,7 +27,7 @@ Base class for extracting songs.
 class SongExtractor(ABC):
     @abstractmethod
     def extract_song(self, url: str): ...
-    
+
     def sanitize_keyword(self, token: str) -> bool: 
         if token[0] in BLACKLIST_CHARS:
             return False
@@ -56,6 +52,10 @@ Child class of SongExtractor which extracts youtube audio from spotify playlist 
 class SpotifySongExtractor(SongExtractor):
     def __init__(self) -> None:
         ...
+        
+    def parseUrl(self):
+        from urllib import parse
+        parse.url
         
     def extract_song(self, url: str):
         if "spotify.com" not in url: return
