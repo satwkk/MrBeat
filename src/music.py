@@ -1,3 +1,4 @@
+import asyncio
 import discord
 
 from typing import List
@@ -52,12 +53,12 @@ class Music(commands.Cog):
         if isinstance(extractor, YoutubeSongExtractor):
             song = extractor.extract_song(url)
             
-        audio_source = await discord.FFmpegOpusAudio.from_probe(song.url, **self.FFMPEG_OPTIONS)
+        audio_source = await discord.FFmpegOpusAudio.from_probe(song.audioStream, **self.FFMPEG_OPTIONS)
         if audio_source:
-            music_embed = Embed(title="Playing 🎵", colour=discord.Color.dark_gold())
-            music_embed.add_field(name=f"{song.title}", value='\u200b')
-            music_embed.set_image(url=song.thumbnail)
-            await ctx.channel.send(embed=music_embed)
+            musicEmbed = Embed(title="Playing 🎵", colour=discord.Color.random())
+            musicEmbed.add_field(name=f"{song.title}", value='\u200b')
+            musicEmbed.set_image(url=song.thumbnail)
+            await ctx.channel.send(embed=musicEmbed)
             
         ctx.voice_client.play(audio_source, after=lambda e: self.bot.loop.create_task(self.play_next_song(ctx)))
             
@@ -121,10 +122,10 @@ class Music(commands.Cog):
         if self.queueManager.bIsEmpty(ctx):
             return await ctx.channel.send('No songs in queue')
         
-        embed = Embed(title="Queued Songs 🎶", colour=discord.Color.red())
+        queueEmbed = Embed(title="Queued Songs 🎶", colour=discord.Color.red())
         for idx, songs in enumerate(SONGQUEUE[ctx.guild.name]):
-            embed.add_field(name="\u200b", value=f"**{idx + 1}. {songs}**", inline=False)
-        await ctx.channel.send(embed=embed)
+            queueEmbed.add_field(name="\u200b", value=f"**{idx + 1}. {songs}**\n", inline=False)
+        await ctx.channel.send(embed=queueEmbed)
 
     '''
     Shuffles the queue if it has more than one song.
@@ -223,7 +224,7 @@ class Music(commands.Cog):
     '''
     @commands.command(aliases=['lp', 'listp'], pass_context=True)
     async def list_playlist(self, ctx: commands.Context):
-        playlists = self.playlistManager.listTables()
+        playlists = self.playlistManager.listPlaylists()
         
         value = ""
         playlistEmbed = Embed(title="_Available Playlists_ 📻", colour=discord.Color.purple())

@@ -54,7 +54,7 @@ class PlayListManager():
     Lists all tables (playlists) in the database.
     @param: None
     '''
-    def listTables(self):
+    def listPlaylists(self):
         self.cursor.execute(f"select name from sqlite_master where type='table';")
         return self.cursor.fetchall()
     
@@ -76,7 +76,7 @@ class PlayListManager():
     @param: playlist - Name of the playlist to be created
     '''
     def bAlreadyExists(self, playlist: str) -> bool:
-        tables = self.listTables()
+        tables = self.listPlaylists()
         for table in tables:
             if playlist == table[0]:
                 return True

@@ -22,10 +22,10 @@ class Events(commands.Cog):
     async def on_command_completion(self, ctx: commands.Context) -> None:
         log(DebugLogMessage(ctx.message))
     
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
-        log(str(error))
-        log(ErrorLogMessage(ctx.message))
+    # @commands.Cog.listener()
+    # async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
+    #     log(str(error))
+    #     log(ErrorLogMessage(ctx.message))
         
     async def load_channels(self, guilds: AsyncIterator):
         async for guild in guilds:
