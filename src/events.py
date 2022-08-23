@@ -1,9 +1,9 @@
 from cprint import cprint
 from discord.ext import commands
-from typing import AsyncIterator, List
+from typing import AsyncIterator
 
-from src.logger import ErrorLogMessage, DebugLogMessage, log, log_to_stdout
-from src.queue import SONGQUEUE, QueueManager
+from src.logger import ErrorLogMessage, DebugLogMessage, log
+from src.queue import QueueManager
 
 class Events(commands.Cog):
     def __init__(self, bot):
@@ -21,6 +21,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_command_completion(self, ctx: commands.Context) -> None:
         log(DebugLogMessage(ctx.message))
+        
     
     # @commands.Cog.listener()
     # async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:

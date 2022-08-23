@@ -34,7 +34,7 @@ class Song:
         if self.__thumbnail:
             return self.__thumbnail
 
-class YoutubePlayer(YoutubeDL):
+class Youtube(YoutubeDL):
     def __init__(self, params=None, auto_init=True):
         super().__init__({'format': 'bestaudio/best', 'noplaylist':'True', 'quiet': 'True', 'ignoreerrors': 'True'}, auto_init)
         self.__videoURI = 'https://www.youtube.com/watch?v={}'

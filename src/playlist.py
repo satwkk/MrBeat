@@ -1,5 +1,4 @@
 import sqlite3
-from typing import List
 
 from cprint import cprint
 from src.config import SQL_BLACKLIST_CHARS
@@ -11,6 +10,14 @@ class PlayListManager():
     def __init__(self):
         self.conn = sqlite3.connect("test.db")
         self.cursor = self.conn.cursor()
+    
+    '''
+    Destructor to close all connections.
+    '''
+    def __del__(self):
+        if self.conn is not None and self.cursor is not None:
+            self.conn.close()
+            self.cursor.close()
     
     '''
     Searches for any SQL vulnerable characters in the query and replaces it with empty character
@@ -81,7 +88,3 @@ class PlayListManager():
             if playlist == table[0]:
                 return True
         return False
-
-    def cleanup(self):
-        self.cursor.close()
-        self.conn.close()
