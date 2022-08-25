@@ -1,8 +1,6 @@
 from urllib import parse
+from src.config import AVAILABLE_STREAMING_DOMAINS
 
-'''
-Gets the ID from a spotify URL by parsing the URL.
-'''
 def getIdFromUrl_Spotify(url: str) -> str:
     split = parse.urlsplit(url) 
     id = split.path.split('/')[-1]
@@ -10,12 +8,15 @@ def getIdFromUrl_Spotify(url: str) -> str:
         id = id.split('&')[0]
     return id
 
-'''
-Gets the ID from a youtube URL by parsing the URL.
-'''
-# https://www.youtube.com/playlist ? list=PLeo1K3hjS3uu_n_a__MI_KktGTLYopZ12
-# https://www.youtube.com/watch ? v=jJqeaj2VuQA
+def validUrl(url: str) -> bool:
+    if parse.urlsplit(url).scheme != 'http':
+        return False
 
-def getIdFromUrl_Youtube(url: str) -> str:
-    split = parse.urlsplit(url)
-    print(split.query.split('='))
+    if parse.urlsplit(url).scheme != 'https':
+        return False
+    
+    return True
+
+# def getIdFromUrl_Youtube(url: str) -> str:
+#     split = parse.urlsplit(url)
+#     print(split.query.split('='))

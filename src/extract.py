@@ -50,7 +50,7 @@ class SpotifySongExtractor(SongExtractor):
     @param: track - It is a dictionary containing metadata about the track.
     # TODO: Some ascii letters in a song name seems to return NoneType causing the bot to error out.
     '''
-    def getTrackDetails(self, track) -> tuple[Optional[None], str]:
+    def getTrackDetails(self, track) -> tuple[str, str]:
         if track is None:
             return
         name = track.get('name')

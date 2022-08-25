@@ -1,16 +1,16 @@
-import asyncio
-from functools import partial
+from urllib import parse
 import discord
 
 from discord import Embed
 from discord.ext import commands
-from src.youtube import Youtube, Song
+from src.exceptions import InvalidStreamingUrl, InvokerClientError, NoPlaylistFound, PlaylistAlreadyExists, QueueIsEmpty, QueueNotEmpty, VoiceClientAlreadyActive
 
+from src.youtube import Youtube
 from src.playlist import PlayListManager
 from src.factory import ExtractorFactory
 from src.queue import QueueManager, SongQueue
-from src.config import INVOKER_NOT_JOINED_ALERT
-from src.extract import SpotifySongExtractor, YoutubeSongExtractor, SpotifyPlaylistExtractor
+from src.config import AVAILABLE_STREAMING_DOMAINS
+
 
 class Music(commands.Cog):
     def __init__(self, bot) -> None:
@@ -38,7 +38,6 @@ class Music(commands.Cog):
     @param: None
     '''
     def play_next_song(self, ctx: commands.Context) -> None:
-        print("Playing play_next_song")
         if self.queueManager.bIsEmpty(ctx):
             return
         
@@ -67,7 +66,7 @@ class Music(commands.Cog):
         musicEmbed = Embed(title="Playing 🎵", colour=discord.Color.random())
         musicEmbed.add_field(name=f"{song.title}", value='\u200b')
         musicEmbed.set_image(url=song.thumbnail)
-        await ctx.channel.send(embed=musicEmbed)
+        await ctx.send(embed=musicEmbed)
         ctx.voice_client.play(audio_source, after=lambda e=None: self.play_next_song(ctx))
             
     '''
@@ -77,9 +76,9 @@ class Music(commands.Cog):
     @commands.command(aliases=['pau', 'paus', 'stop', 'pa'], pass_context=True)
     async def pause(self, ctx: commands.Context):
         if ctx.message.author.voice is None:
-            return await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
+            raise InvokerClientError
            
-        await ctx.channel.send(f"PAUSED ⏸ - {self.currentSong.title}")
+        await ctx.send(f"PAUSED ⏸ ")
         ctx.voice_client.pause()
 
     '''
@@ -89,9 +88,9 @@ class Music(commands.Cog):
     @commands.command(aliases=['r', 'res', 'resum', 'resu'], pass_context=True)
     async def resume(self, ctx: commands.Context):
         if ctx.message.author.voice is None:
-            return await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
+            raise InvokerClientError
            
-        await ctx.channel.send(f"RESUMED ⏯ - {self.currentSong.title}")
+        await ctx.send(f"RESUMED ⏯ ")
         ctx.voice_client.resume()
 
     '''
@@ -101,7 +100,7 @@ class Music(commands.Cog):
     @commands.command(aliases=['lea', 'leav'], pass_context=True)
     async def leave(self, ctx: commands.Context):
         if ctx.message.author.voice is None:
-            return await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
+            raise InvokerClientError
            
         self.queueManager.clearQueue(ctx)
         await ctx.voice_client.disconnect()
@@ -113,13 +112,13 @@ class Music(commands.Cog):
     @commands.command(aliases=['q', 'que'], pass_context=True)
     async def queue(self, ctx: commands.Context, *, song: str):
         if ctx.message.author.voice is None:
-            return await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
+            raise InvokerClientError
            
         if self.bIsVoiceClientActive(ctx):
             self.queueManager.addSong(ctx, song)
-            await ctx.channel.send(f"**{song}** added to the queue.")
+            await ctx.send(f"**{song}** added to the queue.")
         else:
-            await ctx.channel.send('No track being currently played, cannot add to queue. Use play command to play a song')
+            await ctx.send('No track being currently played, cannot add to queue. Use play command to play a song')
     
     '''
     Lists all songs in the queue.
@@ -127,13 +126,17 @@ class Music(commands.Cog):
     '''
     @commands.command(aliases=['l', 'lq', 'listq', 'listqueue'], pass_context=True)
     async def list_queue(self, ctx: commands.Context):
-        if self.queueManager.bIsEmpty(ctx):
-            return await ctx.channel.send('No songs in queue')
+        if self.queueManager.bIsEmpty(ctx): raise QueueIsEmpty
         
         queueEmbed = Embed(title="Queued Songs 🎶", colour=discord.Color.red())
         for idx, songs in enumerate(SongQueue[ctx.guild.name]):
             queueEmbed.add_field(name="\u200b", value=f"**{idx + 1}. {songs}**\n", inline=False)
-        await ctx.channel.send(embed=queueEmbed)
+        await ctx.send(embed=queueEmbed)
+        
+    @list_queue.error
+    async def list_queue_error(self, ctx: commands.Context, err: commands.CommandError):
+        if isinstance(err, QueueIsEmpty):
+            await ctx.send('No songs in queue')
 
     '''
     Shuffles the queue if it has more than one song.
@@ -141,8 +144,18 @@ class Music(commands.Cog):
     '''
     @commands.command(aliases=['shuffleq', 'shuffle'], pass_context=True)
     async def shuffle_queue(self, ctx: commands.Context):
-        self.queueManager.shuffleQueue(ctx)
+        if self.queueManager.bIsEmpty(ctx): raise QueueIsEmpty
         
+        self.queueManager.shuffleQueue(ctx)
+    
+    @shuffle_queue.error
+    async def shuffle_queue_error(self, ctx: commands.Context, err: commands.CommandError):
+        if isinstance(err, QueueIsEmpty):
+            await ctx.send('No songs in queue')
+        
+    '''
+    NOTE: Debug Only
+    '''
     @commands.command(name='debug', pass_context=True)
     @commands.has_role('Developer')
     async def debug(self, ctx: commands.Context):
@@ -154,13 +167,15 @@ class Music(commands.Cog):
     '''  
     @commands.command(aliases=['f', 'fl', 'fq', 'flushq', 'flushqueue'], pass_context=True)
     async def flush(self, ctx: commands.Context):
-        if ctx.message.author.voice is None:
-            return await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
-        
-        if self.queueManager.bIsEmpty(ctx):
-            return await ctx.channel.send('No songs in queue.')
+        if ctx.message.author.voice is None: raise InvokerClientError
+        if self.queueManager.bIsEmpty(ctx): raise QueueIsEmpty
         
         self.queueManager.clearQueue(ctx)
+        
+    @flush.error
+    async def flush_error(self, ctx: commands.Context, err: commands.CommandError):
+        if isinstance(err, QueueIsEmpty):
+            await ctx.send('No songs in queue')
     
     '''
     Skips the current song playing and plays another one in the queue. 
@@ -169,13 +184,15 @@ class Music(commands.Cog):
     '''
     @commands.command(aliases=['s', 'sk', 'ski'], pass_context=True)
     async def skip(self, ctx: commands.Context):
-        if ctx.message.author.voice is None:
-            return await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
-        
-        if self.queueManager.bIsEmpty(ctx): 
-            return await ctx.channel.send('No songs in queue to skip.')
+        if ctx.message.author.voice is None: raise InvokerClientError
+        if self.queueManager.bIsEmpty(ctx): raise QueueIsEmpty
         
         ctx.voice_client.stop()
+        
+    @skip.error
+    async def skip_error(self, ctx: commands.Context, err: commands.CommandError):
+        if isinstance(err, QueueIsEmpty):
+            await ctx.send('No songs in queue')
     
     '''
     Plays a song as requested by user. This takes in a keyword to perform a search 
@@ -185,15 +202,20 @@ class Music(commands.Cog):
     @commands.command(aliases=['p', 'pla', 'pl'], pass_context=True)
     async def play(self, ctx: commands.Context, *, url: str):
         if ctx.message.author.voice is None:
-            return await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
+            raise InvokerClientError
 
         if ctx.voice_client is None: 
             await ctx.author.voice.channel.connect()
         
         if not self.queueManager.bIsEmpty(ctx): 
-            return await ctx.channel.send(f"There are music in queues.")
+            raise QueueNotEmpty
 
         await self.play_song(url, ctx)
+
+    @play.error
+    async def playError(self, ctx: commands.Context, err: commands.CommandError):
+        if isinstance(err, QueueNotEmpty):
+            return await ctx.send(f"There are musics in queues.")
 
     '''
     Adds a given spotify playlist into the database to cache the songs based on key, value pair.
@@ -204,11 +226,11 @@ class Music(commands.Cog):
     '''
     @commands.command(aliases=['ap', 'add'], pass_context=True)
     async def add_playlist(self, ctx: commands.Context, name: str, url: str):
-        if not url.startswith('http') or not url.startswith('https'): 
-            return await ctx.channel.send(f"\"{url}\" is not Valid playlist URL.")
+        if parse.urlsplit(url).netloc not in AVAILABLE_STREAMING_DOMAINS:
+            raise InvalidStreamingUrl
         
         if self.playlistManager.bAlreadyExists(name):
-            return await ctx.channel.send(f"{name} already exists, try a different name.")
+            raise PlaylistAlreadyExists
 
         await ctx.channel.send("Caching all songs. Please wait.")
         async with ctx.channel.typing():
@@ -222,6 +244,14 @@ class Music(commands.Cog):
                 )
                     
             await ctx.channel.send(f"All songs added to playlist {playlistName} created by user {ctx.author.name}")
+
+    @add_playlist.error
+    async def add_playlist_error(self, ctx: commands.Context, err: commands.CommandError):
+        if isinstance(err, InvalidStreamingUrl):
+            await ctx.send(f"Invalid streaming platform.\nCurrently available platforms: **{' '.join([domain for domain in AVAILABLE_STREAMING_DOMAINS])}**")
+            
+        if isinstance(err, PlaylistAlreadyExists):
+            await ctx.send(f"Playlist already exists, try a different name.")
     
     '''
     Lists all the playlists in the database.
@@ -246,23 +276,39 @@ class Music(commands.Cog):
     '''        
     @commands.command(aliases=['pp', 'playp'], pass_context=True)
     async def play_playlist(self, ctx: commands.Context, *, playlist: str):
-        if ctx.voice_client is None: await ctx.author.voice.channel.connect()
-        if not self.queueManager.bIsEmpty(ctx): self.queueManager.clearQueue(ctx)
+        if ctx.voice_client is None: 
+            await ctx.author.voice.channel.connect()
+
+        if not self.queueManager.bIsEmpty(ctx): 
+            self.queueManager.clearQueue(ctx)
         
         count = 0
+
         contents = self.playlistManager.getContents(table=playlist)
-        if contents is None: return await ctx.channel.send(f"No playlist found by name {playlist} Use listp to list all the playlists.")
+        if contents is None: 
+            raise NoPlaylistFound
+        
         for song in contents:
             count += 1
             self.queueManager.addSong(ctx, song[0])
             
         await ctx.channel.send(f"{count} songs added to queue.")
         
+        # NOTE: Hacky way to bypass a bug where the bot skips the first song 
+        # if this command is invoked again while already playing a playlist
         if self.bIsVoiceClientActive(ctx):
-            ctx.voice_client.stop()
-            return
+            raise VoiceClientAlreadyActive
         
         await self.play_song(self.queueManager.popSong(ctx), ctx)
+
+    @play_playlist.error
+    async def play_playlist_error(self, ctx: commands.Context, err: commands.CommandError):
+        if isinstance(err, NoPlaylistFound):
+            await ctx.send(f"No playlist found by that name")
+
+        if isinstance(err, VoiceClientAlreadyActive):
+            ctx.voice_client.stop()
+            return
         
 def setup(bot):
     bot.add_cog(Music(bot))

@@ -1,8 +1,10 @@
 from cprint import cprint
 from discord.ext import commands
 from typing import AsyncIterator
+from src.config import INVOKER_NOT_JOINED_ALERT
 
 from src.logger import ErrorLogMessage, DebugLogMessage, log
+from src.music import InvokerClientError
 from src.queue import QueueManager
 
 class Events(commands.Cog):
@@ -23,10 +25,13 @@ class Events(commands.Cog):
         log(DebugLogMessage(ctx.message))
         
     
-    # @commands.Cog.listener()
-    # async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
-    #     log(str(error))
-    #     log(ErrorLogMessage(ctx.message))
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
+        if isinstance(error, InvokerClientError):
+            await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
+
+        log(str(error))
+        log(ErrorLogMessage(ctx.message))
         
     async def load_channels(self, guilds: AsyncIterator):
         async for guild in guilds:
