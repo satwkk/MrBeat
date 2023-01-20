@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 from src.bot import MrBeat
 
-load_dotenv(".env")
+load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 
