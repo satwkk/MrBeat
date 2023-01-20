@@ -4,11 +4,10 @@ import discord
 from discord import Embed
 from discord.ext import commands
 
-from src.vc import BeatClient
 from src.youtube import Youtube
 from src.factory import ExtractorFactory
 from src.queue import QueueManager, SongQueue
-from src.config import AVAILABLE_STREAMING_DOMAINS
+from src.config import AVAILABLE_STREAMING_DOMAINS, FFMPEG_OPTIONS
 from src.exceptions import AlreadyPlayingAudio, InvalidStreamingUrl, InvokerClientError, QueueIsEmpty, QueueNotEmpty, VoiceClientAlreadyActive
 
 class Music(commands.Cog):
@@ -60,7 +59,12 @@ class Music(commands.Cog):
             )
             song = self.factory.getYoutubeSongExtractor().extract(self.queueManager.pop_song(ctx))
         
-        self.loop.create_task(BeatClient(ctx).play(song, after=lambda e=None: self.play_next_song(ctx)))
+        audio_source = await discord.FFmpegOpusAudio.from_probe(song.audioStream, **FFMPEG_OPTIONS)
+        musicEmbed = Embed(title="Playing 🎵", colour=discord.Color.random())
+        musicEmbed.add_field(name=f"{song.title}", value='\u200b')
+        musicEmbed.set_image(url=song.thumbnail)
+        await ctx.send(embed=musicEmbed)
+        ctx.voice_client.play(audio_source, after=lambda e=None: self.play_next_song(ctx))
             
     '''
     Pauses the currently playing song.

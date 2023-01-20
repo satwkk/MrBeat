@@ -1,5 +1,6 @@
 logs/
 src/__pycache__
+*/.cache
 .cache
 *.db
 test.py

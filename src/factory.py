@@ -10,7 +10,7 @@ class ExtractorFactory:
     @param: url = The url or keyword provided by user.
     '''
     def getExtractor(self, url: str) -> SongExtractor:
-        if url.__contains__("spotify.com"):
+        if url.__contains__("open.spotify.com"):
             if url.__contains__("playlist"):
                 return SpotifyPlaylistExtractor()
             

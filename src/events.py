@@ -27,7 +27,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
         if isinstance(error, InvokerClientError):
-            await ctx.send(INVOKER_NOT_JOINED_ALERT)
+            return await ctx.send(INVOKER_NOT_JOINED_ALERT)
 
         log(str(error))
         log(ErrorLogMessage(ctx.message))
