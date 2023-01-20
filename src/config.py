@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv("../.env")
+load_dotenv()
 
 BLACKLIST_CHARS = ["#", "?", "&", "="]
 SQL_BLACKLIST_CHARS = ["'", " "]

@@ -30,8 +30,8 @@ class Events(commands.Cog):
         if isinstance(error, InvokerClientError):
             await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
 
-        # log(str(error))
-        # log(ErrorLogMessage(ctx.message))
+        log(str(error))
+        log(ErrorLogMessage(ctx.message))
         
     async def load_channels(self, guilds: AsyncIterator):
         async for guild in guilds:
