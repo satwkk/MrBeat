@@ -36,7 +36,8 @@ class Song:
 
 class Youtube(YoutubeDL):
     def __init__(self, params=None, auto_init=True):
-        super().__init__({'format': 'bestaudio/best', 'noplaylist':'True', 'quiet': 'True', 'ignoreerrors': 'True'}, auto_init)
+        # super().__init__({'format': 'bestaudio/best', 'noplaylist':'True', 'quiet': 'True', 'ignoreerrors': 'True'}, auto_init)
+        super().__init__({'format': 'bestaudio/best', 'noplaylist':'True', 'ignoreerrors': 'True', 'verbose': 'True'}, auto_init)
         self.__videoURI = 'https://www.youtube.com/watch?v={}'
         self.__keyword = None
     

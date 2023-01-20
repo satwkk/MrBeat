@@ -12,18 +12,10 @@ class PlayListManager():
         self.cursor = self.conn.cursor()
     
     '''
-    Destructor to close all connections.
-    '''
-    def __del__(self):
-        if self.conn is not None and self.cursor is not None:
-            self.conn.close()
-            self.cursor.close()
-    
-    '''
     Searches for any SQL vulnerable characters in the query and replaces it with empty character
     @param: token - Name of table (playlist) passed by user.
     '''
-    def sanitizeInput(self, token: str):
+    def sanitize_input(self, token: str):
         for char in SQL_BLACKLIST_CHARS:
             if char in token:
                 token = token.replace(char, "")
@@ -34,9 +26,9 @@ class PlayListManager():
     Creates a playlist based on user input after performing some sanitization.
     @param: name - Name of the table (playlist) passed by user.
     '''
-    def createPlaylist(self, name: str):
+    def create_playlist(self, name: str):
         try:
-            name = self.sanitizeInput(name)
+            name = self.sanitize_input(name)
             self.cursor.execute(f'''create table if not exists {name} (song text)''')
             self.conn.commit()
             return name
@@ -48,9 +40,9 @@ class PlayListManager():
     @param: name - Name of the  playlist.
     @param: song - The song keyword to add to the playlist.
     '''
-    def insertPlaylist(self, name: str, song: str):
+    def insert_playlist(self, name: str, song: str):
         try:
-            song = self.sanitizeInput(song)
+            song = self.sanitize_input(song)
             self.cursor.execute (f"insert into {name} values ('{song}')")
             self.conn.commit()
         except Exception as e:
@@ -61,7 +53,7 @@ class PlayListManager():
     Lists all tables (playlists) in the database.
     @param: None
     '''
-    def listPlaylists(self):
+    def list_playlists(self):
         self.cursor.execute(f"select name from sqlite_master where type='table';")
         return self.cursor.fetchall()
     
@@ -69,21 +61,20 @@ class PlayListManager():
     Gets all the songs from a certain playlist.
     @param: table - Name of the playlist
     '''
-    def getContents(self, table: str):
+    def get_contents(self, table: str):
         try:
-            table = self.sanitizeInput(table)
+            table = self.sanitize_input(table)
             self.cursor.execute(f"select * from {table}")
             return self.cursor.fetchall()
         except Exception as e:
             cprint.err(f"Could not found table {table}.")
-            
 
     '''
     Checks if the playlist to be created already exists in the database.
     @param: playlist - Name of the playlist to be created
     '''
-    def bAlreadyExists(self, playlist: str) -> bool:
-        tables = self.listPlaylists()
+    def b_already_exists(self, playlist: str) -> bool:
+        tables = self.list_playlists()
         for table in tables:
             if playlist == table[0]:
                 return True

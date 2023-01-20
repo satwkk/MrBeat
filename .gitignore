@@ -5,3 +5,4 @@ src/__pycache__
 test.py
 .env
 todo.txt
+venv/

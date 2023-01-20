@@ -10,6 +10,9 @@ class VoiceClientAlreadyActive(commands.CommandError):
 class VoiceClientNone(commands.CommandError):
     pass
 
+class AlreadyPlayingAudio(commands.CommandError):
+    pass
+
 # Queue related exceptions
 class QueueNotEmpty(commands.CommandError):
     pass

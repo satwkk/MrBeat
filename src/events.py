@@ -3,7 +3,7 @@ from discord.ext import commands
 from typing import AsyncIterator
 from src.config import INVOKER_NOT_JOINED_ALERT
 
-from src.logger import ErrorLogMessage, DebugLogMessage, log
+from src.logger import ErrorLogMessage, DebugLogMessage, log, logToStdout
 from src.music import InvokerClientError
 from src.queue import QueueManager
 
@@ -15,20 +15,19 @@ class Events(commands.Cog):
     async def on_ready(self) -> None:
         
         # Initializing the song queue
-        QueueManager.initQueue(self.bot.guilds)
+        QueueManager.init_queue(self.bot.guilds)
         
         # Printing debug info about bot and guilds
-        await self.load_bot_info()
+        self.bot.loop.create_task(self.load_bot_info())
         
     @commands.Cog.listener()
     async def on_command_completion(self, ctx: commands.Context) -> None:
         log(DebugLogMessage(ctx.message))
-        
     
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
         if isinstance(error, InvokerClientError):
-            await ctx.channel.send(INVOKER_NOT_JOINED_ALERT)
+            await ctx.send(INVOKER_NOT_JOINED_ALERT)
 
         log(str(error))
         log(ErrorLogMessage(ctx.message))
