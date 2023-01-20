@@ -16,7 +16,3 @@ def validUrl(url: str) -> bool:
         return False
     
     return True
-
-# def getIdFromUrl_Youtube(url: str) -> str:
-#     split = parse.urlsplit(url)
-#     print(split.query.split('='))

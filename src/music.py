@@ -6,11 +6,10 @@ from discord.ext import commands
 
 from src.vc import BeatClient
 from src.youtube import Youtube
-from src.playlist import PlayListManager
 from src.factory import ExtractorFactory
 from src.queue import QueueManager, SongQueue
 from src.config import AVAILABLE_STREAMING_DOMAINS
-from src.exceptions import AlreadyPlayingAudio, InvalidStreamingUrl, InvokerClientError, NoPlaylistFound, PlaylistAlreadyExists, QueueIsEmpty, QueueNotEmpty, VoiceClientAlreadyActive
+from src.exceptions import AlreadyPlayingAudio, InvalidStreamingUrl, InvokerClientError, QueueIsEmpty, QueueNotEmpty, VoiceClientAlreadyActive
 
 class Music(commands.Cog):
     def __init__(self, bot) -> None:
@@ -21,7 +20,6 @@ class Music(commands.Cog):
         self.player = Youtube()
         self.factory = ExtractorFactory()
         self.queueManager = QueueManager()
-        self.playlistManager = PlayListManager()
     
     '''
     Checks the status of voice client.
@@ -198,91 +196,6 @@ class Music(commands.Cog):
             raise QueueNotEmpty
 
         await self.play_song(url, ctx)
-
-    '''
-    Adds a given spotify playlist into the database to cache the songs based on key, value pair.
-    Song - Key
-    Author - Value
-    @param: name - The playlist name to be cached into database.
-    @param: url - The spotify playlist url to extract all songs.
-    '''
-    @commands.command(aliases=['ap', 'add'], pass_context=True)
-    async def add_playlist(self, ctx: commands.Context, name: str, url: str):
-        if parse.urlsplit(url).netloc not in AVAILABLE_STREAMING_DOMAINS:
-            raise InvalidStreamingUrl
-        
-        if self.playlistManager.b_already_exists(name):
-            raise PlaylistAlreadyExists
-
-        await ctx.channel.send("Caching all songs. Please wait.")
-        async with ctx.channel.typing():
-            results = self.factory.getSpotifyPlaylistExtractor().extract(url)
-            playlistName = self.playlistManager.create_playlist(name=name)
-            
-            for song, author in results.items():
-                self.playlistManager.insert_playlist(
-                    name=playlistName,
-                    song=self.queryFormat.format(song, author)
-                )
-                    
-            await ctx.channel.send(f"All songs added to playlist {playlistName} created by user {ctx.author.name}")
-
-    @add_playlist.error
-    async def add_playlist_error(self, ctx: commands.Context, err: commands.CommandError):
-        if isinstance(err, InvalidStreamingUrl):
-            await ctx.send(f"Invalid streaming platform.\nCurrently available platforms: **{' '.join([domain for domain in AVAILABLE_STREAMING_DOMAINS])}**")
-            
-        if isinstance(err, PlaylistAlreadyExists):
-            await ctx.send(f"Playlist already exists, try a different name.")
     
-    '''
-    Lists all the playlists in the database.
-    @param: None
-    '''
-    @commands.command(aliases=['lp', 'listp'], pass_context=True)
-    async def list_playlist(self, ctx: commands.Context):
-        playlists = self.playlistManager.list_playlists()
-        
-        value = ""
-        playlistEmbed = Embed(title="_Available Playlists_ 📻", colour=discord.Color.purple())
-        async with ctx.channel.typing():
-            for idx, playlist in enumerate(playlists):
-                value += f"**{idx + 1}. {playlist[0]}**\n"
-            playlistEmbed.add_field(name="-" * len(playlistEmbed.title), value=value)
-            await ctx.channel.send(embed=playlistEmbed)
-                
-    '''
-    Plays a playlist requested by user.
-    Before playing it clears the queue and adds all the songs to the queue.
-    @param: playlist - The name of the playlist to play.
-    '''        
-    @commands.command(aliases=['pp', 'playp'], pass_context=True)
-    async def play_playlist(self, ctx: commands.Context, *, playlist: str):
-        if ctx.voice_client is None:
-            await ctx.author.voice.channel.connect()
-
-        if not self.queueManager.is_empty(ctx): 
-            self.queueManager.clear_queue(ctx)
-        
-        count = 0
-
-        contents = self.playlistManager.get_contents(table=playlist)
-        if contents is None: 
-            await ctx.send(f"No playlist found by that name")
-        
-        for song in contents:
-            count += 1
-            self.queueManager.add_song(ctx, song[0])
-            
-        await ctx.channel.send(f"{count} songs added to queue.")
-        
-        # NOTE: Hacky way to bypass a bug where the bot skips the first song 
-        # if this command is invoked again while already playing a playlist
-        if self.bIsVoiceClientActive(ctx):
-            ctx.voice_client.stop()
-            return
-        
-        await self.play_song(self.queueManager.pop_song(ctx), ctx)
-
 def setup(bot):
     bot.add_cog(Music(bot))

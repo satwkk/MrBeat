@@ -20,13 +20,6 @@ class QueueNotEmpty(commands.CommandError):
 class QueueIsEmpty(commands.CommandError):
     pass
 
-# Playlist related exceptions
-class NoPlaylistFound(commands.CommandError):
-    pass
-
-class PlaylistAlreadyExists(commands.CommandError):
-    pass
-
 # URL Validation related exceptions
 class InvalidSongUrl(commands.CommandError):
     pass
