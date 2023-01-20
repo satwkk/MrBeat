@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-CMD_PREFIX = "."
+CMD_PREFIX = "-"
 
 class MrBeat(commands.Bot):
     def __init__(self):
