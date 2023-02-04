@@ -10,6 +10,7 @@ from src.queue import QueueManager
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.pattern = "[%d] : %l %m"
     
     @commands.Cog.listener()
     async def on_ready(self) -> None:

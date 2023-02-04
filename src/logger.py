@@ -59,20 +59,16 @@ class ErrorLogMessage(BaseLogMessage):
 Logs message to stdout.
 '''
 def logToStdout(logMessage: Union[BaseLogMessage, str]):
-    if isinstance(logMessage, str):
-        print(logMessage)
-    else:
-        logMessage.printMessage()
+    if isinstance(logMessage, str): print(logMessage)
+    else: logMessage.printMessage()
 
 '''
 Logs message to a file specified by filename parameter.
 '''
 def logToFile(logMessage: Union[BaseLogMessage, str]):
     writer = FileWriter(path=".", filename="discord.log", encoding="utf-8")
-    if isinstance(logMessage, str):
-        writer.write(logMessage + '\n')
-    else:
-        writer.write(logMessage.getMessage())
+    if isinstance(logMessage, str): writer.write(logMessage + '\n')
+    else: writer.write(logMessage.getMessage())
 
 '''
 Wrapper around both function.

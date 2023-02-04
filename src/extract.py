@@ -2,6 +2,7 @@ from urllib import parse
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
 
+from src import utils
 from src.youtube import Youtube, Song
 from src.utils import getIdFromUrl_Spotify
 from src.config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
@@ -49,8 +50,7 @@ class SpotifySongExtractor(SongExtractor):
     @param: track - It is a dictionary containing metadata about the track.
     '''
     def get_meta_data(self, track) -> tuple[str, str]:
-        if track is None:
-            return
+        if track is None: return
         name = track.get('name')
         artist = track.get('artists')[0].get('name').encode('ascii', 'ignore').decode('latin-1')
         return (name, artist)
@@ -61,7 +61,7 @@ class SpotifySongExtractor(SongExtractor):
     @param: url - The url of a specific track from spotify.
     '''
     def extract(self, url: str) -> Song:
-        if not self.validate_netloc(url): return
+        if not utils.validate_url(url, self.streaming_uri): return
         track = self.sp.track(getIdFromUrl_Spotify(url))
         song, artist = self.get_meta_data(track)
         return self.player.extract_info(f"{song} - {artist}")
@@ -77,9 +77,9 @@ class SpotifyPlaylistExtractor(SpotifySongExtractor):
     Extracts meta data of a single audio from the given url.
     @param: url - The url of a specific playlist from spotify.
     ''' 
-    def extract(self, url: str):
+    def extract(self, url: str) -> dict[str, str]:
         urls = dict()
-        if not self.validate_netloc(url): return
+        if not utils.validate_url(url, self.streaming_uri): return
         tracks = self.sp.playlist_tracks(getIdFromUrl_Spotify(url))
         for item in tracks["items"]:
             track = item.get('track')

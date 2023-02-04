@@ -1,5 +1,4 @@
 from urllib import parse
-from src.config import AVAILABLE_STREAMING_DOMAINS
 
 def getIdFromUrl_Spotify(url: str) -> str:
     split = parse.urlsplit(url) 
@@ -8,11 +7,7 @@ def getIdFromUrl_Spotify(url: str) -> str:
         id = id.split('&')[0]
     return id
 
-def validUrl(url: str) -> bool:
-    if parse.urlsplit(url).scheme != 'http':
-        return False
-
-    if parse.urlsplit(url).scheme != 'https':
-        return False
-    
-    return True
+def validate_url(url: str, valid_netloc: str) -> bool:
+    if parse.urlsplit(url).netloc == valid_netloc:
+            return True
+    return False

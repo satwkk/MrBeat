@@ -19,6 +19,9 @@ class QueueManager:
         for guild in guilds:
             SongQueue[guild.name] = list()
     
+    def get_queue(self, ctx: commands.Context) -> List[str]:
+        return SongQueue[ctx.guild.name]
+
     def b_in_queue(self, guild: str) -> bool:
         if guild in SongQueue:
             return True
@@ -31,6 +34,14 @@ class QueueManager:
 
     def pop_song(self, ctx: commands.Context) -> str:
         return SongQueue[ctx.guild.name].pop(0)
+
+    def swap(self, ctx: commands.Context, i1: int, i2: int) -> None:
+        queue = self.get_queue(ctx)
+        i1 = i1 - 1
+        i2 = i2 - 1
+        temp = queue[i1]
+        queue[i1] = queue[i2]
+        queue[i2] = temp
     
     def add_song(self, ctx: commands.Context, song: str) -> None:
         if self.is_empty(ctx):
