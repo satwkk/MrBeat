@@ -1,4 +1,5 @@
 from pytube import Search
+from src.logger import logToStdout
 from youtube_dl import YoutubeDL
 
 class Song:
@@ -45,15 +46,17 @@ class Youtube(YoutubeDL):
         self.__keyword = keyword
         
         searchObj = Search(self.__keyword)
-        metaData = super().extract_info(
-            url=self.__videoURI.format(searchObj.results[0].video_id),
-            download=download
-        )
-        
-        return Song(
-            url=metaData.get('url'), 
-            title=metaData.get('title'), 
-            author=metaData.get('author'), 
-            description=metaData.get('description'),
-            thumbnail=metaData.get('thumbnail')
-        )
+        try:
+            metaData = super().extract_info(
+                url=self.__videoURI.format(searchObj.results[0].video_id),
+                download=download
+            )
+            return Song(
+                url=metaData.get('url'), 
+                title=metaData.get('title'), 
+                author=metaData.get('author'), 
+                description=metaData.get('description'),
+                thumbnail=metaData.get('thumbnail')
+            )
+        except Exception as e:
+            logToStdout(str(e))

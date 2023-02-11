@@ -39,15 +39,11 @@ class QueueManager:
         queue = self.get_queue(ctx)
         i1 = i1 - 1
         i2 = i2 - 1
-        temp = queue[i1]
-        queue[i1] = queue[i2]
-        queue[i2] = temp
+        queue[i1], queue[i2] = queue[i2], queue[i1]
     
     def add_song(self, ctx: commands.Context, song: str) -> None:
-        if self.is_empty(ctx):
-            SongQueue[ctx.guild.name] = [song]
-        else:
-            SongQueue[ctx.guild.name].append(song)
+        if self.is_empty(ctx): SongQueue[ctx.guild.name] = [song]
+        else: SongQueue[ctx.guild.name].append(song)
             
     def add_songs(self, ctx: commands.Context, songs: Union[List[str], dict]) -> None:
         if isinstance(songs, list):
@@ -57,7 +53,7 @@ class QueueManager:
         elif isinstance(songs, dict):
             for k, v in songs.items():
                 self.add_song(ctx, f"{k} - ({v})")
-            
+    
     def clear_queue(self, ctx: commands.Context) -> None:
         SongQueue[ctx.guild.name].clear()
         

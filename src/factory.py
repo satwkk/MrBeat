@@ -1,4 +1,4 @@
-from src.extract import SongExtractor, SpotifyPlaylistExtractor, SpotifySongExtractor, YoutubeSongExtractor
+from src.extract import SongExtractor, SpotifyPlaylistExtractor, SpotifySongExtractor, YoutubeSongExtractor, SpotifyAlbumExtractor
 
 ''' 
 Factory class that returns extractor instance based on some checks. 
@@ -11,8 +11,10 @@ class ExtractorFactory:
     '''
     def getExtractor(self, url: str) -> SongExtractor:
         if url.__contains__("open.spotify.com"):
-            if url.__contains__("playlist"):
+            if "playlist" in url:
                 return SpotifyPlaylistExtractor()
+            elif 'album' in url:
+                return SpotifyAlbumExtractor()
             
             return SpotifySongExtractor()
         
