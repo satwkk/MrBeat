@@ -12,3 +12,5 @@ class MrBeat(commands.Bot):
 
     async def get_context(self, message, *, cls = BeatCtx):
         return await super().get_context(message, cls = cls)
+
+    

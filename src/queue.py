@@ -1,9 +1,11 @@
 from discord import Guild
 
-from typing import List, Optional
+from typing import List
 from typing import Union
 from random import shuffle
 from discord.ext import commands
+
+from src.models.track import Track
 
 # ============================ Song Queue for all guilds =================
 SongQueue = dict()
@@ -32,7 +34,7 @@ class QueueManager:
             return True
         return False
 
-    def pop_song(self, ctx: commands.Context) -> str:
+    def pop_song(self, ctx: commands.Context) -> Track:
         return SongQueue[ctx.guild.name].pop(0)
 
     def swap(self, ctx: commands.Context, i1: int, i2: int) -> None:
@@ -41,18 +43,14 @@ class QueueManager:
         i2 = i2 - 1
         queue[i1], queue[i2] = queue[i2], queue[i1]
     
-    def add_song(self, ctx: commands.Context, song: str) -> None:
+    def add_song(self, ctx: commands.Context, song: Track) -> None:
         if self.is_empty(ctx): SongQueue[ctx.guild.name] = [song]
         else: SongQueue[ctx.guild.name].append(song)
             
-    def add_songs(self, ctx: commands.Context, songs: Union[List[str], dict]) -> None:
+    def add_songs(self, ctx: commands.Context, songs: List[Track]) -> None:
         if isinstance(songs, list):
             for song in songs:
                 self.add_song(ctx, song)
-                
-        elif isinstance(songs, dict):
-            for k, v in songs.items():
-                self.add_song(ctx, f"{k} - ({v})")
     
     def clear_queue(self, ctx: commands.Context) -> None:
         SongQueue[ctx.guild.name].clear()

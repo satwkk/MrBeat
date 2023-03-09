@@ -1,78 +1,45 @@
+from enum import Enum
 from urllib import parse
-from spotipy import Spotify
-from spotipy.oauth2 import SpotifyClientCredentials
 
-from src import utils
-from src.youtube import Youtube, Song
-from src.utils import get_id_from_url
-from src.config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
+from src.extractors import youtube, spotify
 
-''' 
-Base class for extracting songs. 
-'''
-class SongExtractor:
-    player = Youtube()
+class ENetLoc(Enum):
+    YOUTUBE=0
+    SPOTIFY=1
     
-    def __init__(self) -> None: ...
+# Maps the specified song url domain to respective Enum
+def map_url_to_netloc(url: str) -> ENetLoc:
+    netloc = parse.urlsplit(url).netloc 
+    match netloc:
+        case 'www.youtube.com':
+            return ENetLoc.YOUTUBE
+        case 'open.spotify.com':
+            return ENetLoc.SPOTIFY
 
-    '''
-    Extracts audio information from given url or keyword.
-    @param: url - The url of a specific track from spotify.
-    '''
-    def extract(self, url: str): ...
+# Gets the path of the url (Ex: /playlist, /album)
+# TODO: Implement a stack based algorithm
+def get_path(url: str) -> str:
+    path = parse.urlsplit(url).path
+    return path.split('/')[1]
 
-class YoutubeSongExtractor(SongExtractor):
-    def __init__(self) -> None:
-        super().__init__()
-        
-    def extract(self, keyword: str) -> Song:
-        return self.player.extract_info(keyword)
-
-class SpotifySongExtractor(SongExtractor):
-    def __init__(self) -> None:
-        super().__init__()
-        self.streaming_uri = "open.spotify.com"
-        self.auth_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
-        self.sp = Spotify(auth_manager=self.auth_manager)
+# Returns the callback functions based on path of url
+path_table = {
+    ENetLoc.YOUTUBE: {
+        'watch': youtube.track_extract_yt
+    },
     
-    def get_meta_data(self, track) -> tuple[str, str]:
-        if track is None: return
-        name = track.get('name')
-        artist = track.get('artists')[0] \
-            .get('name') \
-                .encode('ascii', 'ignore') \
-                    .decode('latin-1')
-        return (name, artist)
-            
-    def extract(self, url: str) -> Song:
-        assert(parse.urlsplit(url).netloc == self.streaming_uri)
-        track = self.sp.track(get_id_from_url(url))
-        song, artist = self.get_meta_data(track)
-        return self.player.extract_info(f"{song} - {artist}")
-
-class SpotifyPlaylistExtractor(SpotifySongExtractor):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def extract(self, url: str) -> dict[str, str]:
-        assert(parse.urlsplit(url).netloc == self.streaming_uri)
-        urls = dict()
-        tracks = self.sp.playlist_tracks(get_id_from_url(url))
-        for item in tracks['items']:
-            track = item.get('track')
-            song, artist = self.get_meta_data(track)
-            urls[song] = artist
-        return urls
-
-class SpotifyAlbumExtractor(SpotifySongExtractor):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def extract(self, url: str) -> dict[str, str]:
-        assert(parse.urlsplit(url).netloc == self.streaming_uri)
-        urls = dict()
-        tracks = self.sp.album_tracks(get_id_from_url(url))
-        for item in tracks['items']:
-            song, artist = item['name'], ', '.join(artist['name'] for artist in item['artists'])
-            urls[song] = artist
-        return urls
+    ENetLoc.SPOTIFY: {
+        'track': spotify.track_extract_sp,
+        'playlist': spotify.playlist_extract_sp,
+        'album': spotify.album_extract_sp
+    }
+}
+    
+def extract(user_req: str):
+    # If the keyword entered by user is a url
+    if user_req.startswith('http'):
+        netloc = map_url_to_netloc(user_req)
+        return path_table[netloc][get_path(user_req)](user_req)
+    
+    # if the author has entered a keyword to perform a search
+    return youtube.search_track(user_req)

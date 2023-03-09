@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 COMMAND_PREFIX = '-'
+YT_SEARCH_FMT = '{} - {}'
 BLACKLIST_CHARS = ["#", "?", "&", "="]
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")

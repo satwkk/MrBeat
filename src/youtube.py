@@ -1,6 +1,6 @@
-from pytube import Search
-from src.logger import logToStdout
 from youtube_dl import YoutubeDL
+from pytube import Search, YouTube
+from src.logger import logToStdout
 
 class Song:
     def __init__(self, **kwargs):
@@ -37,26 +37,31 @@ class Song:
 
 class Youtube(YoutubeDL):
     def __init__(self, params=None, auto_init=True):
-        # super().__init__({'format': 'bestaudio/best', 'noplaylist':'True', 'quiet': 'True', 'ignoreerrors': 'True'}, auto_init)
-        super().__init__({'format': 'bestaudio/best', 'noplaylist':'True', 'ignoreerrors': 'True', 'verbose': 'True'}, auto_init)
+        super().__init__({'format': 'bestaudio/best', 'noplaylist':'True', 'quiet': 'True', 'ignoreerrors': 'True'}, auto_init)
+        # super().__init__({'format': 'bestaudio/best', 'noplaylist':'True', 'ignoreerrors': 'True', 'verbose': 'True'}, auto_init)
         self.__videoURI = 'https://www.youtube.com/watch?v={}'
-        self.__keyword = None
     
-    def extract_info(self, keyword: str, download: bool = False) -> Song:
-        self.__keyword = keyword
-        
-        searchObj = Search(self.__keyword)
-        try:
-            metaData = super().extract_info(
-                url=self.__videoURI.format(searchObj.results[0].video_id),
-                download=download
-            )
-            return Song(
-                url=metaData.get('url'), 
-                title=metaData.get('title'), 
-                author=metaData.get('author'), 
-                description=metaData.get('description'),
-                thumbnail=metaData.get('thumbnail')
-            )
-        except Exception as e:
-            logToStdout(str(e))
+    def extract_info_url(self, url: str, download: bool = False) -> Song:
+        searchObj = YouTube(url=url)
+        meta_data = super().extract_info(url=self.__videoURI.format(searchObj.video_id), download=download)
+        return Song(
+            url=meta_data.get('url'),
+            title=meta_data.get('title'),
+            author=meta_data.get('author'),
+            description=meta_data.get('description'),
+            thumbnail=meta_data.get('thumbnail')
+        )
+
+    def extract_info_keyword(self, keyword: str, download: bool = False) -> Song:
+        searchObj = Search(keyword)
+        meta_data = super().extract_info(
+            url=self.__videoURI.format(searchObj.results[0].video_id),
+            download=download
+        )
+        return Song(
+            url=meta_data.get('url'),
+            title=meta_data.get('title'),
+            author=meta_data.get('author'),
+            description=meta_data.get('description'),
+            thumbnail=meta_data.get('thumbnail')
+        )
