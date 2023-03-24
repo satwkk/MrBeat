@@ -149,7 +149,6 @@ class Music(commands.Cog):
         if isinstance(song, list):
             self.queueManager.add_songs(ctx, song)
             song = self.search_song_in_queue(ctx)
-        print('PLAYING SONG')
         await self.play_song(song, ctx)
 
     # ERROR HANDLING
