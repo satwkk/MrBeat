@@ -8,6 +8,7 @@ class MrBeat(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.members = True
+        intents.message_content = True
         super().__init__(command_prefix=COMMAND_PREFIX, intents=intents)
 
     async def get_context(self, message, *, cls = BeatCtx):

@@ -11,18 +11,19 @@ ytdl_player = YoutubeDL(params=YOUTUBEDL_PARAMS, auto_init=True)
 def search_track(keyword: str) -> Track:
     search_results = Search(keyword)
     meta_data = ytdl_player.extract_info('https://www.youtube.com/watch?v={}'.format(search_results.results[0].video_id), download=False)
-    return Track(
-        meta_data.get('author'),
+    track = Track(
+        meta_data.get('uploader'),
         meta_data.get('title'),
         meta_data.get('thumbnail'),
         meta_data.get('url')
     )
+    return track
     
 def track_extract_yt(url: str) -> Track:
     search_results = YouTube(url)
     meta_data = ytdl_player.extract_info(url='https://www.youtube.com/watch?v={}'.format(search_results.video_id), download=False)
     return Track(
-        meta_data.get('author'),
+        meta_data.get('uploader'),
         meta_data.get('title'),
         meta_data.get('thumbnail'),
         meta_data.get('url')

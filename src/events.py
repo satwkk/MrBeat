@@ -25,6 +25,7 @@ class Events(commands.Cog):
     async def on_command_completion(self, ctx: commands.Context) -> None:
         log(DebugLogMessage(ctx.message))
     
+    '''
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
         if isinstance(error, InvokerClientError):
@@ -32,6 +33,7 @@ class Events(commands.Cog):
 
         log(str(error))
         log(ErrorLogMessage(ctx.message))
+    '''
         
     async def load_channels(self, guilds: AsyncIterator):
         async for guild in guilds:
@@ -45,5 +47,5 @@ class Events(commands.Cog):
         await self.load_channels(self.bot.fetch_guilds())
         cprint.ok("Bot ready to use !!! \n")
     
-def setup(bot):
-    bot.add_cog(Events(bot))
+async def setup(bot):
+    await bot.add_cog(Events(bot))

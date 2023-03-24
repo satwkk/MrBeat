@@ -1,4 +1,5 @@
 import os
+import asyncio
 
 from dotenv import load_dotenv
 
@@ -14,8 +15,10 @@ COGS = [
         "src.events"
     ]
 
-if __name__ == "__main__":
+async def main():
     bot = MrBeat()
     for cog in COGS:
-        bot.load_extension(cog)
-    bot.run(TOKEN)
+        await bot.load_extension(cog)
+    await bot.start(TOKEN)
+
+asyncio.run(main())

@@ -1,12 +1,11 @@
 import discord
 
-from discord import Embed, FFmpegOpusAudio, Color
+from threading import Thread
 from discord.ext import commands
+from discord import Embed, FFmpegOpusAudio, Color
 
-from src.youtube import Youtube
 from src.extract import extract
 from src.models.track import Track
-from src.factory import ExtractorFactory
 from src.queue import QueueManager, SongQueue
 from src.extractors.youtube import search_track
 from src.config import FFMPEG_OPTIONS, YT_SEARCH_FMT
@@ -33,9 +32,6 @@ class BeatCtx(commands.Context):
     def is_vc_active(self):
         if self.voice_client.is_playing() or self.voice_client.is_paused(): return True
         return False
-    
-    def is_paused(self):
-        return self.voice_client.is_paused()
 
     def is_valid_author(self) -> bool:
         return False if not self.message.author.voice else True
@@ -54,9 +50,6 @@ class Music(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
         self.loop = self.bot.loop
-        self.currentSong = None
-        self.player = Youtube()
-        self.factory = ExtractorFactory()
         self.queueManager = QueueManager()
         
     def search_song_in_queue(self, ctx: BeatCtx) -> Track:
@@ -64,20 +57,18 @@ class Music(commands.Cog):
         return search_track(YT_SEARCH_FMT.format(song.track_title, song.author_name))
     
     def play_next_song(self, ctx: BeatCtx) -> None:
-        if self.queueManager.is_empty(ctx): return
-        if ctx.guild.name in SongQueue:
-            next_song = self.queueManager.pop_song(ctx)
-            # If the audio stream is not populated then only perform the search
-            if not next_song.playable:
-                next_song = search_track(YT_SEARCH_FMT.format(next_song.track_title, next_song.author_name))
-            # else we already have the track audio stream, play it.
-            self.loop.create_task(self.play_song(next_song, ctx))        
+        if self.queueManager.is_empty(ctx): 
+            return
         
+        next_song = self.queueManager.pop_song(ctx)
+        if not next_song.playable:
+            next_song = search_track(YT_SEARCH_FMT.format(next_song.track_title, next_song.author_name))
+        self.loop.create_task(self.play_song(next_song, ctx))
+
     async def play_song(self, song: Track, ctx: BeatCtx) -> None:
         await ctx.play(song, after=lambda e=None: self.play_next_song(ctx))
         
     @commands.command(aliases=['pau', 'paus', 'stop', 'pa'], pass_context=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
     async def pause(self, ctx: BeatCtx) -> None:
         if not ctx.is_valid_author(): raise InvokerClientError
         if not ctx.voice_client.is_playing(): return
@@ -97,11 +88,11 @@ class Music(commands.Cog):
         await ctx.voice_client.disconnect()
     
     @commands.command(aliases=['q', 'que'], pass_context=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
     async def queue(self, ctx: BeatCtx, *, song: str) -> None:
         if not ctx.is_valid_author(): raise InvokerClientError
         if not ctx.is_vc_active(): return await ctx.send('Not playing any track. Use play command to play a song directly.')
         # Extracts the track content beforehand to save time.
+        # TODO: Add multithreading maybe ?
         track = extract(song)
         # If the url entered is playlist then add all song from the playlist into the queue
         if isinstance(track, list): self.queueManager.add_songs(ctx, track)
@@ -109,7 +100,6 @@ class Music(commands.Cog):
         await ctx.send(f"**{song}** added to the queue.")
     
     @commands.command(aliases=['l', 'lq', 'listq', 'listqueue'], pass_context=True)
-    @commands.cooldown(1, 30, commands.BucketType.user)
     async def list_queue(self, ctx: BeatCtx) -> None:
         if self.queueManager.is_empty(ctx): return await ctx.send('No songs in queue')
         queueEmbed = Embed(title="Queued Songs 🎶", colour=discord.Color.red())
@@ -118,7 +108,6 @@ class Music(commands.Cog):
         await ctx.send(embed=queueEmbed)
         
     @commands.command(aliases=['shuffleq', 'shuffle'], pass_context=True)
-    @commands.cooldown(1, 30, commands.BucketType.user)
     async def shuffle_queue(self, ctx: BeatCtx) -> None:
         if self.queueManager.is_empty(ctx): return await ctx.send('No songs in queue')
         self.queueManager.shuffle_queue(ctx)
@@ -131,21 +120,18 @@ class Music(commands.Cog):
         print(SongQueue)
     
     @commands.command(aliases=['f', 'fl', 'fq', 'flushq', 'flushqueue'], pass_context=True)
-    @commands.cooldown(1, 30, commands.BucketType.user)
     async def flush(self, ctx: BeatCtx) -> None:
         if not ctx.is_valid_author(): raise InvokerClientError
         if self.queueManager.is_empty(ctx): raise QueueIsEmpty
         self.queueManager.clear_queue(ctx)
         
     @commands.command(aliases=['sw'], pass_context=True)
-    @commands.cooldown(1, 20, commands.BucketType.user)
     @commands.has_role('Developer')
     async def swap(self, ctx: BeatCtx, i1: str, i2: str) -> None:
         if self.queueManager.is_empty(ctx): raise QueueIsEmpty
         self.queueManager.swap(ctx, int(i1), int(i2))
     
     @commands.command(aliases=['s', 'sk', 'ski'], pass_context=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
     async def skip(self, ctx: BeatCtx) -> None:
         if not ctx.is_valid_author(): raise InvokerClientError
         if self.queueManager.is_empty(ctx): raise QueueIsEmpty
@@ -153,17 +139,18 @@ class Music(commands.Cog):
     
     # TODO: Refactor all these checks for the play command        
     @commands.command(aliases=['p', 'pla', 'pl'], pass_context=True)
-    @commands.cooldown(1, 2, commands.BucketType.user)
     async def play(self, ctx: BeatCtx, *, url: str) -> None:
-        if not ctx.is_valid_author(): raise InvokerClientError
-        if not ctx.voice_client: await ctx.author.voice.channel.connect()
-        if not self.queueManager.is_empty(ctx): raise QueueNotEmpty
-        if ctx.is_vc_active(): ctx.voice_client.stop()
+        if not ctx.is_valid_author():  raise InvokerClientError
+        if not ctx.voice_client:  await ctx.author.voice.channel.connect()
+        if not self.queueManager.is_empty(ctx):  return await ctx.send('There are musics in queues. Add song to queue or flush it.')
+        if ctx.is_vc_active():  ctx.voice_client.stop()
+            
         song = extract(url)
         if isinstance(song, list):
             self.queueManager.add_songs(ctx, song)
             song = self.search_song_in_queue(ctx)
-        self.loop.create_task(self.play_song(song, ctx))
+        print('PLAYING SONG')
+        await self.play_song(song, ctx)
 
     # ERROR HANDLING
     @skip.error
@@ -178,9 +165,5 @@ class Music(commands.Cog):
     async def swap_error(self, ctx: BeatCtx, err: commands.CommandError):
         if isinstance(err, QueueIsEmpty): return await ctx.send('No songs in queue')
 
-    @play.error
-    async def play_err(self, ctx: BeatCtx, err: commands.CommandError):
-        if isinstance(err, QueueNotEmpty): return await ctx.send(f'There are musics in queues. Add song to queue or flush it.')
-    
-def setup(bot):
-    bot.add_cog(Music(bot))
+async def setup(bot):
+    await bot.add_cog(Music(bot))

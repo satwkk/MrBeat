@@ -16,5 +16,5 @@ class Greetings(commands.Cog):
         greet = random.choice(self.get_greetings()["greeting"])
         await ctx.channel.send(f"{greet} {ctx.message.author.mention}")
 
-def setup(bot):
-    bot.add_cog(Greetings(bot))
+async def setup(bot):
+    await bot.add_cog(Greetings(bot))

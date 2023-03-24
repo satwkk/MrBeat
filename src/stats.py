@@ -27,5 +27,5 @@ class Stats(commands.Cog):
         message.add_field(name="Server Stats", value="**totalmessages** - No. of messages in the text channel.\n**owner** - Owner of the server.\n**update** - Alert for new updates to the bot.")
         await ctx.channel.send(embed=message)
     
-def setup(bot):
-    bot.add_cog(Stats(bot))
+async def setup(bot):
+    await bot.add_cog(Stats(bot))
