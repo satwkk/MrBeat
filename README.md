@@ -1,21 +1,20 @@
 # Mr Beat
 
-A simple discord music bot with few other useful commands i created as a project for my discord channel.
+A simple discord music bot with multi guild support.
 
-## Commands available for now
+## Commands available
 
 Command Prefix = "-"
 ```
 play <song name>
-play <youtube url>
+play <url> (Supported platforms are youtube, spotify for now !)
 queue
 list_queue (lq, l)
-editqueue (eq, editq)
+swap
 flush
 skip
 users
 totalmessages
 leave
-hello
 owner
 ```
