@@ -1,3 +1,6 @@
+# NOTE
+This repo is archived and is not updated anymore. The new streaming bot is at [https://github.com/satwkk/Discord-Music-Bot](https://github.com/satwkk/Discord-Music-Bot)
+
 # Mr Beat
 
 A simple discord music bot with multi guild support.
